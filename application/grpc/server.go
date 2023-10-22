@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/jinzhu/gorm"
 	"github.com/keyo-oliveira/codepix/application/grpc/pb"
-	"github.com/keyo-oliveira/codepix/application/usecase"
+	"github.com/keyo-oliveira/codepix/application/usecases"
 	"github.com/keyo-oliveira/codepix/infra/repository"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -16,8 +16,8 @@ func StartGrpcServer(database *gorm.DB, port int) {
 	grpcServer := grpc.NewServer()
 	reflection.Register(grpcServer)
 
-	pixResitory := repository.PixKeyRepositoryDb{Db: database}
-	pixUseCase := usecase.PixUseCase{PixKeyRepository: pixResitory}
+	pixRepository := repository.PixKeyRepositoryDb{Db: database}
+	pixUseCase := usecases.PixUseCase{PixKeyRepository: pixRepository}
 	PixGrpcService := NewPixGrpcService(pixUseCase)
 	pb.RegisterPixServiceServer(grpcServer, PixGrpcService)
 

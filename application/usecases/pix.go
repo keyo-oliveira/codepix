@@ -1,4 +1,4 @@
-package usecase
+package usecases
 
 import (
 	"github.com/keyo-oliveira/codepix/domain/model"

@@ -1,10 +1,14 @@
 package kafka
 
-import ckafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+import (
+	"fmt"
+	ckafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"os"
+)
 
-func NewKafkaProducer() *ckafka.Producer {
+func TheNewKafkaProducer() *ckafka.Producer {
 	configMap := &ckafka.ConfigMap{
-		"bootstrap.servers": "kafka:9092",
+		"bootstrap.servers": os.Getenv("kafkaBootstrapServers"),
 	}
 	producer, err := ckafka.NewProducer(configMap)
 	if err != nil {
@@ -14,17 +18,30 @@ func NewKafkaProducer() *ckafka.Producer {
 	return producer
 }
 
-func Publish(msg string, topic string, producer *ckafka.Producer) error {
+func Publish(msg string, topic string, producer *ckafka.Producer, deliveryChan chan ckafka.Event) error {
 	message := &ckafka.Message{
 		TopicPartition: ckafka.TopicPartition{
 			Topic:     &topic,
 			Partition: ckafka.PartitionAny,
 		}, Value: []byte(msg),
 	}
-	err := producer.Produce(message, nil)
+	err := producer.Produce(message, deliveryChan)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func DeliveryReport(deliveryChan chan ckafka.Event) {
+	for e := range deliveryChan {
+		switch ev := e.(type) {
+		case *ckafka.Message:
+			if ev.TopicPartition.Error != nil {
+				fmt.Println("Delivery Failed:", ev.TopicPartition)
+			} else {
+				fmt.Println("Delivered message to:", ev.TopicPartition)
+			}
+		}
+	}
 }

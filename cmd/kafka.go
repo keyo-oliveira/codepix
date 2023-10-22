@@ -6,6 +6,9 @@ package cmd
 
 import (
 	"fmt"
+	ckafka "github.com/confluentinc/confluent-kafka-go/v2/kafka"
+	"github.com/keyo-oliveira/codepix/infra/db"
+	"os"
 
 	"github.com/keyo-oliveira/codepix/application/kafka"
 	"github.com/spf13/cobra"
@@ -18,8 +21,14 @@ var kafkaCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("kafka called")
-		producer := kafka.NewKafkaProducer()
-		kafka.Publish("Ola kafka", "teste", producer)
+		deliveryChan := make(chan ckafka.Event)
+		producer := kafka.TheNewKafkaProducer()
+		database := db.ConnectDB(os.Getenv("env"))
+		kafka.Publish("Ola kafka", "teste", producer, deliveryChan)
+		go kafka.DeliveryReport(deliveryChan)
+
+		kafkaProcessor := kafka.NewKafkaProcessor(database, producer, deliveryChan)
+		kafkaProcessor.Consume()
 	},
 }
 
